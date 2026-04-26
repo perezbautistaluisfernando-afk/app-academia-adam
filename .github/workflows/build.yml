@@ -1,0 +1,47 @@
+name: Build APK
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+
+    - name: Install system dependencies
+      run: |
+        sudo apt update
+        sudo apt install -y openjdk-17-jdk unzip zip libncurses5 git
+
+    - name: Install Python dependencies
+      run: |
+        pip install buildozer cython
+
+    - name: Create buildozer.spec
+      run: |
+        buildozer init
+        sed -i 's/title = .*/title = Academia Adam/' buildozer.spec
+        sed -i 's/package.name = .*/package.name = academiaadam/' buildozer.spec
+        sed -i 's/package.domain = .*/package.domain = org.academiaadam/' buildozer.spec
+        sed -i 's/requirements = .*/requirements = python3,kivy,pyrebase4,qrcode,pillow,requests,pyjnius/' buildozer.spec
+        sed -i 's/# android.permissions = .*/android.permissions = INTERNET, CAMERA, WRITE_EXTERNAL_STORAGE/' buildozer.spec
+        sed -i 's/orientation = .*/orientation = portrait/' buildozer.spec
+
+    - name: Build APK
+      run: buildozer -v android debug
+
+    - name: Upload APK
+      uses: actions/upload-artifact@v4
+      with:
+        name: academia-adam-apk
+        path: bin/*.apk
